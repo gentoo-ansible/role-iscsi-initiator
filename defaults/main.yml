@@ -1,0 +1,76 @@
+---
+# List of network interfaces configured for iSCSI connections.
+iscsi_interfaces: []
+
+# List of FQDN hostnames or IP addresses of iSCSI Target hosts on which Ansible
+# will perform iSCSI discovery.
+iscsi_portals: []
+
+# List of iSCSI Targets configured on a given host. Each iSCSI Target is
+# defined as a dict with keys:
+#
+#   target        - iSCSI Qualified Name string which points to the specified
+#                   target (required).
+#   auto          - Specify if the given target should be logged into on system
+#                   boot (`true`), or not (`false`). Default is `true`.
+#   login         - Specify if the given target should be connected (`true`) or
+#                   disconnected (`false`). Default is `true`.
+#   auth_username - iSCSI session username used for this target; overrides
+#                   global password set in `iscsi_session_auth_username`
+#                   (optional).
+#   auth_password - iSCSI session password used for this target; overrides
+#                   global password set in `iscsi_session_auth_password`
+#                   (optional).
+#
+# Example:
+#   - target: iqn.2004-08.com.qsantechnology:qsan-01:dev3.ctr1
+#     auto: false
+iscsi_targets: []
+
+# iSCSI initiator name of this host.
+iscsi_initiator_name:
+
+# iSCSI initiator alias of this host.
+iscsi_initiator_alias: "{{ ansible_hostname }}"
+
+# CHAP username used for iSCSI discovery authentication on all hosts, should be
+# the same for all iSCSI Targets to work automatically.
+# If empty, then discovery authentication will be disabled.
+iscsi_discovery_auth_username: ''
+
+# Password used for iSCSI discovery authentication on all hosts, should be the
+# same for all iSCSI Targets to work automatically.
+iscsi_discovery_auth_password: ''
+
+# CHAP username used for iSCSI session authentication on all hosts, should be
+# the same for all iSCSI Targets to work automatically. Can be overriden using
+# `item.auth_username` in target configuration.
+# If empty, then discovery authentication will be disabled.
+iscsi_session_auth_username: ''
+
+# Password used for iSCSI session authentication on all hosts, should be the
+# same for all iSCSI Targets to work automatically. Can be overriden using
+# `item.auth_password` in target configuration.
+iscsi_session_auth_password: ''
+
+# Specify number of seconds to wait for session re-establishment before failing
+# SCSI commands back to the application when running the Linux SCSI Layer
+# error handler.
+#
+# Special values:
+# - If the value is 0, IO will be failed immediately.
+# - If the value is less than 0, IO will remain queued until the session is
+#   logged back in, or until the user runs the logout command.
+iscsi_session_replacement_timeout: 20
+
+# Dict with options set in `/etc/iscsi/iscsid.conf`, passed to `lineinfile`
+# Ansible module.
+iscsi_default_options:
+  'node.startup':                           'manual'
+  'discovery.sendtargets.auth.authmethod':  "{{ 'CHAP' if iscsi_discovery_auth_username != '' else 'None' }}"
+  'discovery.sendtargets.auth.username':    "{{ iscsi_discovery_auth_username }}"
+  'discovery.sendtargets.auth.password':    "{{ iscsi_discovery_auth_password }}"
+  'node.session.auth.authmethod':           "{{ 'CHAP' if iscsi_session_auth_username != '' else 'None' }}"
+  'node.session.auth.username':             "{{ iscsi_session_auth_username }}"
+  'node.session.auth.password':             "{{ iscsi_session_auth_password }}"
+  'node.session.timeo.replacement_timeout': '20'

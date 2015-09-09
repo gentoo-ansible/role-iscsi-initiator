@@ -1,0 +1,56 @@
+---
+- name: install sys-block/open-iscsi
+  portage: package=sys-block/open-iscsi
+
+- name: configure iSCSI initiator IQN
+  copy: >
+    dest=/etc/iscsi/initiatorname.iscsi
+    content='InitiatorName={{ iscsi_initiator_name }}\nInitiatorAlias={{ iscsi_initiator_alias }}\n'
+    owner=root group=root mode=0644
+  notify: restart iscsid
+
+- name: configure iSCSI default options
+  lineinfile: >
+    dest=/etc/iscsi/iscsid.conf
+    regexp="{{ (item.key | replace('.', '\.')) + '\s=\s' }}"
+    line="{{ '' if item.value != '' else '#' }}{{ item.key }} = {{ item.value }}"
+  with_dict: iscsi_default_options
+  no_log: true
+
+  # Restart iscsid if initial configuration has been changed.
+- meta: flush_handlers
+
+- name: enable and start iscsid
+  service: name=iscsid enabled=yes state=started
+
+- name: generate iSCSI interface configuration
+  shell: >
+    iscsiadm --mode iface --interface {{ item }} --op new \
+      && iscsiadm --mode iface --interface {{ item }} --op update --name iface.net_ifacename --value {{ item }}
+    creates=/etc/iscsi/ifaces/{{ item }}
+  with_items: iscsi_interfaces
+
+- name: list nodes in the persistent iscsi database
+  shell: iscsiadm --mode node | sort
+  register: _known_nodes
+  changed_when: false
+
+  # We don't use Ansible module open-iscsi, because it always overwrites iscsi
+  # database during discovery.
+- name: discover iSCSI targets on portals
+  shell: >
+    iscsiadm --mode discoverydb --type sendtargets --portal {{ item }} --discover --op new | sort
+  register: _discovered_nodes
+  changed_when: _discovered_nodes.stdout != _known_nodes.stdout
+  with_items: iscsi_portals
+
+- name: log in to specified iSCSI targets
+  open_iscsi: >
+    target="{{ item.target }}"
+    login="{{ item.login | default(true) }}"
+    node_auth="{{ 'CHAP' if item.auth_username | default(false) else '' }}"
+    node_user="{{ item.auth_username | default('') }}"
+    node_pass="{{ item.auth_password | default('') }}"
+    auto_node_startup="{{ item.auto | default(true) }}"
+  with_items: iscsi_targets
+  no_log: true
