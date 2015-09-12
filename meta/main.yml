@@ -2,7 +2,7 @@
 galaxy_info:
   author: Jakub Jirutka
   company: CTU in Prague
-  description: Install and configure iSCSI initiator.
+  description: Install and configure iSCSI initiator, optionally with multipath.
   license: MIT
   min_ansible_version: 1.8
   platforms:

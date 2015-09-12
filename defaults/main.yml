@@ -21,10 +21,24 @@ iscsi_portals: []
 #   auth_password - iSCSI session password used for this target; overrides
 #                   global password set in `iscsi_session_auth_password`
 #                   (optional).
+#   multipath     - Specify multipath options for each LUN on the specified
+#                   target (optional). Expects list of dicts with keys:
+#
+#       lun           - LUN (logical unit number) of the SCSI drive (required).
+#                       Note: This is not used directly by multipath; Ansible
+#                       will use it together with the target name to find the
+#                       disk WWID for you (required).
+#       alias         - Symbolic name for this multipath map.
+#       ...           - Any multipath attributes, valid in the multipath
+#                       subsection, to override {{iscsi_multipath_defaults}}
+#                       for this multipath (see man multipath.conf).
 #
 # Example:
 #   - target: iqn.2004-08.com.qsantechnology:qsan-01:dev3.ctr1
 #     auto: false
+#     multipath:
+#       - { lun: 0, alias: nas-git }
+#       - { lun: 1, alias: nas-backups }
 iscsi_targets: []
 
 # iSCSI initiator name of this host.
@@ -74,3 +88,26 @@ iscsi_default_options:
   'node.session.auth.username':             "{{ iscsi_session_auth_username }}"
   'node.session.auth.password':             "{{ iscsi_session_auth_password }}"
   'node.session.timeo.replacement_timeout': '20'
+
+#
+# Multipath
+#
+
+# Whether to install and configure multipath.
+iscsi_multipath_enabled: false
+
+# List of devices to discard as not multipath candidates. Each item must be
+# a dict with one key: "devnode", or "wwid".
+#
+# Example:
+#   - devnode: '^sd[a-c]'
+#   - wwid: 3200c00137892d098
+iscsi_multipath_blacklist: []
+
+# Dict with default settings for multipath-tools.
+# See man multipath.conf for more information.
+#
+# Example:
+#   path_selector: round-robin 0
+#   rr_weight: priorities
+iscsi_multipath_defaults: {}

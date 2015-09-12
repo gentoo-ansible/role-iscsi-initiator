@@ -1,0 +1,35 @@
+---
+- name: gather iSCSI facts
+  action: iscsi_facts
+
+- name: check if iSCSI devices specified for multipath exists
+  fail: >
+    msg="Could not find WWID of iSCSI device on target {{ item.0.target }} and LUN {{ item.1.lun }}!"
+  when: >
+    iscsi_facts[item.0.target] is undefined or
+    iscsi_facts[item.0.target] | selectattr('lun', 'equalto', item.1.lun) | list | length == 0
+  with_subelements:
+    - "{{ iscsi_targets | rejectattr('multipath', 'undefined') | list }}"
+    - multipath
+
+- name: configure multipath.conf
+  template: >
+    src=multipath.conf.j2
+    dest=/etc/multipath.conf
+    owner=root group=root mode=0644
+  notify: run multipath
+
+- name: configure multipath runscript
+  copy: >
+    dest=/etc/conf.d/multipath
+    content='rc_need="iscsid"\nrc_before="!checkfs !fsck"\n'
+    owner=root group=root mode=0644
+
+- name: enable and start multipath(d)
+  service: >
+    name={{ item }}
+    enabled=yes
+    state=started
+  with_items:
+    - multipath
+    - multipathd

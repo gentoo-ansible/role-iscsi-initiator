@@ -1,0 +1,36 @@
+# {{ ansible_managed }}
+
+# List of device names to discard as not multipath candidates.
+# Devices can be identified by their device node name "devnode", their WWID
+# "wwid", or their vender and product strings "device".
+blacklist {
+	devnode "^(ram|raw|loop|fd|md|dm-|sr|scd|st,dcssblk)[0-9]*"
+{% for item in iscsi_multipath_blacklist %}
+{% set type, val = item.items() | first %}
+	{{ type }} "{{ val }}"
+{% endfor %}
+}
+
+# Multipath-tools default settings.
+defaults {
+{% for k, v in iscsi_multipath_defaults | dictsort %}
+	{{ k }}		"{{ v }}"
+{% endfor %}
+}
+
+# List of multipaths finest-grained settings.
+multipaths {
+{% for target in iscsi_targets %}
+{% for item in target.multipath | default([]) %}
+
+	multipath {
+		wwid 		{{ (iscsi_facts[target.target] | selectattr('lun', 'equalto', item.lun) | first)['wwid'] }}
+{% for k, v in item | dictsort %}
+{% if not k in ['lun', 'wwid'] %}
+		{{ k }}		"{{ v }}"
+{% endif %}
+{% endfor %}
+{% endfor %}
+	}
+{% endfor %}
+}

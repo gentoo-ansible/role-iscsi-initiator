@@ -1,3 +1,6 @@
 ---
 - name: restart iscsid
   service: name=iscsid state=restarted
+
+- name: run multipath
+  command: multipath
