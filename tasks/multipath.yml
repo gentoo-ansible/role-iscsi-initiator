@@ -2,7 +2,7 @@
 - name: gather iSCSI facts
   action: iscsi_facts
 
-- name: check if iSCSI devices specified for multipath exists
+- name: check if iSCSI devices specified for multipath actually exist
   fail: >
     msg="Could not find WWID of iSCSI device on target {{ item.0.target }} and LUN {{ item.1.lun }}!"
   when: >

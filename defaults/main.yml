@@ -27,7 +27,7 @@ iscsi_portals: []
 #       lun           - LUN (logical unit number) of the SCSI drive (required).
 #                       Note: This is not used directly by multipath; Ansible
 #                       will use it together with the target name to find the
-#                       disk WWID for you (required).
+#                       disk WWID for you.
 #       alias         - Symbolic name for this multipath map.
 #       ...           - Any multipath attributes, valid in the multipath
 #                       subsection, to override {{iscsi_multipath_defaults}}
